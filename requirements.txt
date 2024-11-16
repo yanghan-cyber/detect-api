@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+opencv-python
+ultralytics
+pillow
+easyocr
+requests
+pyautogui
+git+https://github.com/THU-MIG/yolov10.git
+huggingface_hub
+safetensors
+python-multipart
+clip
