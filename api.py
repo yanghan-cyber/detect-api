@@ -8,6 +8,7 @@ from typing import List, Optional
 
 import uvicorn
 
+from orc_detector import OCRDetector
 from yolo_detector import YOLODetector
 
 app = FastAPI(title="YOLO Detection API")
@@ -110,10 +111,38 @@ def get_yolov10_names():
     model = load_model('v10')
     return JSONResponse(content=model.model.names)
 
-# @app.get("/yoloworld/names")
-# def get_yoloworld_names():
-#     model = load_model('world')
-#     return JSONResponse(content=model.model.names)
+
+# 初始化 OCR 检测器
+ocr_detector = OCRDetector()
+
+@app.post("/ocr/detect")
+async def detect_ocr(
+                    file: UploadFile = File(...), 
+                    conf: float = Form(default=0.3)):
+    """
+    上传图像进行OCR检测
+    :param file: 上传的图像文件
+    :param request: 包含置信度的请求体
+    :return: 检测到的文本
+    """
+    try:
+        if not is_image_file(file.filename):
+            raise HTTPException(status_code=400, detail="Unsupported file type")
+        
+        # 保存文件到临时路径
+        temp_file_path = f"temp/{file.filename}"
+        with open(temp_file_path, "wb") as buffer:
+            buffer.write(await file.read())
+
+        # 使用 OCR 检测图像
+        ocr_results = ocr_detector.detect_image(temp_file_path, conf=conf)
+
+        # 清理临时文件
+        os.remove(temp_file_path)
+
+        return {"text": ocr_results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
